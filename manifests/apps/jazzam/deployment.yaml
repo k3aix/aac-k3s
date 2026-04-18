@@ -69,7 +69,7 @@ metadata:
 data:
   PORT: "3001"
   NODE_ENV: "production"
-  DB_HOST: "postgres-postgresql.postgres.svc.cluster.local"
+  DB_HOST: "postgres-postgresql-primary.postgres.svc.cluster.local"
   DB_PORT: "5432"
   DB_NAME: "jazz-postgres"
   DB_USER: "postgres"
