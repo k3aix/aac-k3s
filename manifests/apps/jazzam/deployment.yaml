@@ -1,0 +1,175 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: jazz-frontend
+  name: jazz-frontend
+  namespace: jazzam
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: jazz-frontend
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-env
+  namespace: jazzam
+data:
+  VITE_SEARCH_SERVICE_URL: "http://jazz-search:5001"
+  VITE_STANDARDS_SERVICE_URL: "http://jazz-standards:3001"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jazz-frontend
+  name: jazz-frontend
+  namespace: jazzam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jazz-frontend
+  template:
+    metadata:
+      labels:
+        app: jazz-frontend
+    spec:
+      nodeName: tauntoncross
+      containers:
+      - image: localhost:30100/jazz-frontend:latest
+        imagePullPolicy: Always
+        name: jazz-frontend
+        envFrom:
+        - configMapRef:
+            name: frontend-env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: jazz-standards
+  name: jazz-standards
+  namespace: jazzam
+spec:
+  ports:
+  - port: 3001
+    targetPort: 3001
+  selector:
+    app: jazz-standards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: standards-env
+  namespace: jazzam
+data:
+  PORT: "3001"
+  NODE_ENV: "production"
+  DB_HOST: "postgres-postgresql.postgres.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "jazz-postgres"
+  DB_USER: "postgres"
+  CORS_ORIGIN: "*"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jazz-standards
+  name: jazz-standards
+  namespace: jazzam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jazz-standards
+  template:
+    metadata:
+      labels:
+        app: jazz-standards
+    spec:
+      nodeName: tauntoncross
+      containers:
+      - image: localhost:30100/jazz-standards:latest
+        imagePullPolicy: Always
+        name: jazz-standards
+        envFrom:
+        - configMapRef:
+            name: standards-env
+        - secretRef:
+            name: jazz-standards.env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: jazz-search
+  name: jazz-search
+  namespace: jazzam
+spec:
+  ports:
+  - port: 5001
+    targetPort: 5001
+  selector:
+    app: jazz-search
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: search-env
+  namespace: jazzam
+data:
+  ASPNETCORE_URLS: "http://+:5001"
+  ASPNETCORE_ENVIRONMENT: "Production"
+  StandardsService__BaseUrl: "http://jazz-standards:3001"
+  TZ: "Europe/Rome"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jazz-search
+  name: jazz-search
+  namespace: jazzam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jazz-search
+  template:
+    metadata:
+      labels:
+        app: jazz-search
+    spec:
+      nodeName: tauntoncross
+      containers:
+      - image: localhost:30100/jazz-search:latest
+        imagePullPolicy: Always
+        name: jazz-search
+        envFrom:
+        - configMapRef:
+            name: search-env
+        volumeMounts:
+        - mountPath: /app/logs
+          name: search-logs
+      volumes:
+      - name: search-logs
+        persistentVolumeClaim:
+          claimName: search-logs-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: search-logs-pvc
+  namespace: jazzam
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi

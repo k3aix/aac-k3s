@@ -1,0 +1,7 @@
+# Actual secrets — should live in the private companion repo, never here
+secrets/
+
+# Kubeconfig files contain cluster credentials
+agent-kubeconfig.yaml
+kubeconfig
+*.kubeconfig

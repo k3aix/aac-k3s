@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: rwthbigband-website
+  name: rwthbigband-website
+  namespace: rwthbigband
+spec:
+  selector:
+    app: rwthbigband-website
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rwthbigband-website
+  namespace: rwthbigband
+spec:
+  selector:
+    matchLabels:
+      app: rwthbigband-website
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: rwthbigband-website
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - rwthbigband-website
+            topologyKey: "kubernetes.io/hostname"
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - rwthbigband-website
+              topologyKey: topology.kubernetes.io/zone
+      containers:
+      - name: nginx
+        image: localhost:30100/rwthbigband-website:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: rwthbigband.env

@@ -1,0 +1,76 @@
+# postgres-values.yaml
+global:
+  postgresql:
+    auth:
+      database: "laravel"
+      existingSecret: "postgres-credentials"
+      secretKeys:
+        adminPasswordKey: postgres-password
+
+primary:
+  networkPolicy:
+    enabled: false
+
+  persistence:
+    size: 8Gi
+
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+
+  configuration: |
+    listen_addresses = '*'
+    max_connections = 100
+    shared_buffers = 256MB
+    effective_cache_size = 768MB
+    maintenance_work_mem = 64MB
+    checkpoint_completion_target = 0.9
+    wal_buffers = 7864kB
+    default_statistics_target = 100
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    work_mem = 2621kB
+    min_wal_size = 1GB
+    max_wal_size = 4GB
+
+readReplicas:
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: prometheus
+
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+replication:
+  enabled: true
+  readReplicas: 1
+  synchronousCommit: "on"
+  numSynchronousReplicas: 1
+
+backup:
+  enabled: false
+  cronjob:
+    schedule: "0 2 * * *"
+    storage:
+      persistentVolumeClaim:
+        size: 8Gi

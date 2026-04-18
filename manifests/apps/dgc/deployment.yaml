@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: dgc-website
+  name: dgc-website
+  namespace: dgc-aachen
+spec:
+  selector:
+    app: dgc-website
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: dgc-aachen
+data:
+  nginx.conf: |
+    worker_processes  1;
+
+    events {
+      worker_connections  1024;
+    }
+
+    http {
+            server {
+        listen 80;
+        server_name dgc-aachen.de;
+
+        index index.html;
+        root   /usr/share/nginx/html;
+
+        include /etc/nginx/mime.types;
+
+        gzip on;
+        gzip_min_length 1000;
+        gzip_proxied expired no-cache no-store private auth;
+        gzip_types text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+
+        location / {
+          try_files $uri $uri/ @htmlext;
+        }
+
+        location ~ \.html$ {
+          try_files $uri =404;
+        }
+
+        location @htmlext {
+          rewrite ^(.*)$ $1.html last;
+        }
+
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dgc-website
+  namespace: dgc-aachen
+spec:
+  selector:
+    matchLabels:
+      app: dgc-website
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: dgc-website
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - dgc-website
+            topologyKey: "kubernetes.io/hostname"
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - dgc-website
+              topologyKey: topology.kubernetes.io/zone
+      containers:
+      - name: nginx
+        image: localhost:30100/dgc-website:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: nginx-conf
+          items:
+            - key: nginx.conf
+              path: nginx.conf
