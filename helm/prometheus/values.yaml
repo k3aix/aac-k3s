@@ -11,7 +11,7 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
 
     # Reduce retention for edge/IoT deployments
-    retention: 7d
+    retention: 3d
 
     # Lower resource requirements for K3s
     resources:
