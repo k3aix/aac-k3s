@@ -29,7 +29,7 @@ metadata:
   name: jazz-frontend
   namespace: jazzam
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: jazz-frontend
@@ -38,7 +38,16 @@ spec:
       labels:
         app: jazz-frontend
     spec:
-      nodeName: tauntoncross
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - jazz-frontend
+            topologyKey: topology.kubernetes.io/zone
       containers:
       - image: localhost:30100/jazz-frontend:latest
         imagePullPolicy: Always
@@ -83,7 +92,7 @@ metadata:
   name: jazz-standards
   namespace: jazzam
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: jazz-standards
@@ -92,7 +101,16 @@ spec:
       labels:
         app: jazz-standards
     spec:
-      nodeName: tauntoncross
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - jazz-standards
+            topologyKey: topology.kubernetes.io/zone
       containers:
       - image: localhost:30100/jazz-standards:latest
         imagePullPolicy: Always
@@ -136,7 +154,7 @@ metadata:
   name: jazz-search
   namespace: jazzam
 spec:
-  replicas: 1
+  replicas: 1  # ReadWriteOnce PVC prevents multiple replicas
   selector:
     matchLabels:
       app: jazz-search
@@ -145,7 +163,6 @@ spec:
       labels:
         app: jazz-search
     spec:
-      nodeName: tauntoncross
       containers:
       - image: localhost:30100/jazz-search:latest
         imagePullPolicy: Always
@@ -153,6 +170,11 @@ spec:
         envFrom:
         - configMapRef:
             name: search-env
+        resources:
+          requests:
+            memory: "3Gi"
+          limits:
+            memory: "5Gi"
         volumeMounts:
         - mountPath: /app/logs
           name: search-logs
