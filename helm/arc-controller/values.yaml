@@ -1,0 +1,2 @@
+# ARC Controller — manages runner lifecycle across the cluster
+# Installed in arc-systems namespace

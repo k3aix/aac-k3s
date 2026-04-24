@@ -1,0 +1,12 @@
+# ARC Runner Scale Set — org-level runners for k3aix
+# Runners are ephemeral: spun up on demand, terminated after each job
+# DinD enables docker buildx for multi-arch builds (amd64 + arm64 nodes in cluster)
+
+githubConfigUrl: "https://github.com/k3aix"
+githubConfigSecret: "github-app-secret"
+
+minRunners: 0
+maxRunners: 3
+
+containerMode:
+  type: "dind"
