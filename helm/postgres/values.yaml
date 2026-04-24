@@ -6,6 +6,9 @@ global:
       existingSecret: "postgres-credentials"
       secretKeys:
         adminPasswordKey: postgres-password
+        replicationPasswordKey: postgres-replication-password
+
+architecture: replication
 
 primary:
   networkPolicy:
@@ -16,10 +19,10 @@ primary:
 
   resources:
     requests:
-      memory: "2Gi"
+      memory: "4Gi"
       cpu: "1"
     limits:
-      memory: "4Gi"
+      memory: "6Gi"
       cpu: "2"
 
   configuration: |
@@ -38,12 +41,13 @@ primary:
     max_wal_size = 4GB
 
 readReplicas:
+  replicaCount: 1
   resources:
     requests:
-      memory: "2Gi"
+      memory: "4Gi"
       cpu: "1"
     limits:
-      memory: "4Gi"
+      memory: "6Gi"
       cpu: "2"
 
 metrics:
@@ -60,12 +64,6 @@ metrics:
     limits:
       memory: 512Mi
       cpu: 500m
-
-replication:
-  enabled: true
-  readReplicas: 1
-  synchronousCommit: "on"
-  numSynchronousReplicas: 1
 
 backup:
   enabled: false

@@ -29,7 +29,7 @@ prometheus:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 10Gi
+              storage: 100Gi
 
     # Additional scrape configs for K3s-specific endpoints
     additionalScrapeConfigs:

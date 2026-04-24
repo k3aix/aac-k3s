@@ -79,17 +79,9 @@ spec:
                 operator: In
                 values:
                 - dgc-website
-            topologyKey: "kubernetes.io/hostname"
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - dgc-website
-              topologyKey: topology.kubernetes.io/zone
+            topologyKey: "topology.kubernetes.io/zone"
+            matchLabelKeys:
+            - pod-template-hash
       containers:
       - name: nginx
         image: localhost:30100/dgc-website:latest
