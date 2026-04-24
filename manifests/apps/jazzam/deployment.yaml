@@ -164,7 +164,12 @@ metadata:
   name: jazz-search
   namespace: jazzam
 spec:
-  replicas: 1  # ReadWriteOnce PVC prevents multiple replicas
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: jazz-search
@@ -173,6 +178,16 @@ spec:
       labels:
         app: jazz-search
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - jazz-search
+            topologyKey: topology.kubernetes.io/zone
       containers:
       - image: localhost:30100/jazz-search:latest
         imagePullPolicy: Always
@@ -185,23 +200,3 @@ spec:
             memory: "3Gi"
           limits:
             memory: "5Gi"
-        volumeMounts:
-        - mountPath: /app/logs
-          name: search-logs
-      volumes:
-      - name: search-logs
-        persistentVolumeClaim:
-          claimName: search-logs-pvc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: search-logs-pvc
-  namespace: jazzam
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 1Gi
