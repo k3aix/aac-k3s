@@ -1,0 +1,6 @@
+ui:
+  singleRegistry: true  # Add the menu that show the dialogs to add, remove and change the endpoint of your docker registry.
+  # UI behave as a proxy of the registry
+  proxy: true
+  # The URL of your docker registry, may be a service (when proxy is on) or an external URL.
+  dockerRegistryUrl: http://registry.kube-registry.svc.cluster.local:5000
