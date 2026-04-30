@@ -11,6 +11,8 @@ global:
 architecture: replication
 
 primary:
+  nodeSelector:
+    kubernetes.io/hostname: tauntoncross
   networkPolicy:
     enabled: false
 
@@ -19,36 +21,63 @@ primary:
 
   resources:
     requests:
-      memory: "4Gi"
-      cpu: "1"
+      memory: 512Mi
+      cpu: 200m
     limits:
-      memory: "6Gi"
-      cpu: "2"
+      memory: 2Gi
+      cpu: 2
 
-  configuration: |
+  extendedConfiguration: |
     listen_addresses = '*'
-    max_connections = 100
-    shared_buffers = 256MB
-    effective_cache_size = 768MB
-    maintenance_work_mem = 64MB
-    checkpoint_completion_target = 0.9
-    wal_buffers = 7864kB
-    default_statistics_target = 100
-    random_page_cost = 1.1
-    effective_io_concurrency = 200
-    work_mem = 2621kB
-    min_wal_size = 1GB
-    max_wal_size = 4GB
+    synchronous_commit = off
+    synchronous_standby_names = ''
+    max_wal_senders = 10
+    max_replication_slots = 10
 
 readReplicas:
-  replicaCount: 1
+  extendedConfiguration: |
+    hot_standby = on
+    hot_standby_feedback = on
+    max_standby_streaming_delay = -1
+    max_standby_archive_delay = -1
+    max_wal_senders = 10
+    max_replication_slots = 10
+  ## Startup probe: Disables other probes until this one passes
+  ## This is ideal for long initial replications.
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 60 # 60 * 10s = 10 minutes to finish cloning
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  replicaCount: 2
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/component: read
+          topologyKey: "kubernetes.io/hostname"
   resources:
     requests:
-      memory: "4Gi"
-      cpu: "1"
+      memory: 512Mi
+      cpu: 200m
     limits:
-      memory: "6Gi"
-      cpu: "2"
+      memory: 1Gi
+      cpu: 1
 
 metrics:
   enabled: true
@@ -59,11 +88,11 @@ metrics:
 
   resources:
     requests:
-      memory: 256Mi
+      memory: 128Mi
       cpu: 100m
     limits:
-      memory: 512Mi
-      cpu: 500m
+      memory: 256Mi
+      cpu: 300m
 
 backup:
   enabled: false
@@ -72,3 +101,25 @@ backup:
     storage:
       persistentVolumeClaim:
         size: 8Gi
+
+extraDeploy:
+  - |
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: postgres-postgresql-read-local
+      labels:
+        app.kubernetes.io/component: read
+        app.kubernetes.io/instance: postgres
+        app.kubernetes.io/name: postgresql
+    spec:
+      type: ClusterIP
+      internalTrafficPolicy: Local
+      ports:
+        - name: postgresql
+          port: 5432
+          targetPort: 5432
+      selector:
+        app.kubernetes.io/component: read
+        app.kubernetes.io/instance: postgres
+        app.kubernetes.io/name: postgresql
