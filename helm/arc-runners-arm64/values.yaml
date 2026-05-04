@@ -1,0 +1,17 @@
+# ARC Runner Scale Set — arm64 runners for k3aix
+# Scheduled exclusively on rospicant (arm64 node)
+# DinD enables docker buildx for native arm64 image builds
+
+githubConfigUrl: "https://github.com/k3aix"
+githubConfigSecret: "github-app-secret"
+
+minRunners: 0
+maxRunners: 3
+
+containerMode:
+  type: "dind"
+
+template:
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: arm64

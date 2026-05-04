@@ -1,0 +1,104 @@
+name: Docker Multi-arch Build
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: Image name in the registry (e.g. jazz-frontend)
+        required: true
+        type: string
+      context:
+        description: Docker build context path relative to the calling repo root
+        required: true
+        type: string
+      registry:
+        description: Registry host
+        required: false
+        type: string
+        default: registry.kube-registry.svc.cluster.local:5000
+      push:
+        description: Whether to push images (set false on pull_request)
+        required: false
+        type: boolean
+        default: true
+
+env:
+  REGISTRY: ${{ inputs.registry }}
+
+jobs:
+  build-amd64:
+    name: Build ${{ inputs.service }} (amd64)
+    runs-on: k3aix-amd64-runners
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - uses: docker/setup-buildx-action@v3
+        with:
+          config-inline: |
+            [registry."${{ inputs.registry }}"]
+              http = true
+              insecure = true
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.context }}/Dockerfile
+          platforms: linux/amd64
+          push: ${{ inputs.push }}
+          tags: ${{ inputs.registry }}/${{ inputs.service }}:${{ steps.meta.outputs.sha }}-amd64
+
+  build-arm64:
+    name: Build ${{ inputs.service }} (arm64)
+    runs-on: k3aix-arm64-runners
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - uses: docker/setup-buildx-action@v3
+        with:
+          config-inline: |
+            [registry."${{ inputs.registry }}"]
+              http = true
+              insecure = true
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.context }}/Dockerfile
+          platforms: linux/arm64
+          push: ${{ inputs.push }}
+          tags: ${{ inputs.registry }}/${{ inputs.service }}:${{ steps.meta.outputs.sha }}-arm64
+
+  merge:
+    name: Merge ${{ inputs.service }} manifest
+    runs-on: k3aix-amd64-runners
+    needs: [build-amd64, build-arm64]
+    if: ${{ inputs.push }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - uses: docker/setup-buildx-action@v3
+        with:
+          config-inline: |
+            [registry."${{ inputs.registry }}"]
+              http = true
+              insecure = true
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker buildx imagetools create \
+            -t ${{ inputs.registry }}/${{ inputs.service }}:${{ steps.meta.outputs.sha }} \
+            -t ${{ inputs.registry }}/${{ inputs.service }}:latest \
+            ${{ inputs.registry }}/${{ inputs.service }}:${{ steps.meta.outputs.sha }}-amd64 \
+            ${{ inputs.registry }}/${{ inputs.service }}:${{ steps.meta.outputs.sha }}-arm64

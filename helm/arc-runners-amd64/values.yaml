@@ -1,0 +1,25 @@
+# ARC Runner Scale Set — amd64 runners for k3aix
+# Scheduled exclusively on amd64 worker nodes (not control-plane)
+# DinD enables docker buildx for native amd64 image builds
+
+githubConfigUrl: "https://github.com/k3aix"
+githubConfigSecret: "github-app-secret"
+
+minRunners: 0
+maxRunners: 3
+
+containerMode:
+  type: "dind"
+
+template:
+  spec:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/arch
+              operator: In
+              values: ["amd64"]
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
