@@ -1,0 +1,49 @@
+# Cloudflare tunnel for dev.jazzam.it
+# Prerequisites: create the tunnel in Cloudflare Zero Trust dashboard,
+# then apply the token secret:
+#   kubectl create secret generic tunnel-token \
+#     -n jazzam-staging --from-literal=token=<YOUR_TUNNEL_TOKEN>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: jazzam-staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      containers:
+      - name: cloudflared
+        image: cloudflare/cloudflared:latest
+        env:
+        - name: TUNNEL_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: tunnel-token
+              key: token
+        command:
+        - cloudflared
+        - tunnel
+        - --no-autoupdate
+        - --loglevel
+        - info
+        - --metrics
+        - 0.0.0.0:2000
+        - --protocol
+        - http2
+        - run
+        - --url
+        - http://jazz-frontend.jazzam-staging.svc.cluster.local:80
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 2000
+          failureThreshold: 1
+          initialDelaySeconds: 10
+          periodSeconds: 10
