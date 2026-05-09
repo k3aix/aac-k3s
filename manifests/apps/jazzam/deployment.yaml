@@ -54,7 +54,7 @@ spec:
                 - jazz-frontend
             topologyKey: topology.kubernetes.io/zone
       containers:
-      - image: localhost:30100/jazz-frontend:v1.1.0
+      - image: localhost:30100/jazz-frontend:v1.1.1
         imagePullPolicy: Always
         name: jazz-frontend
         envFrom:
@@ -122,7 +122,7 @@ spec:
                 - jazz-standards
             topologyKey: topology.kubernetes.io/zone
       containers:
-      - image: localhost:30100/jazz-standards:v1.1.0
+      - image: localhost:30100/jazz-standards:v1.1.1
         imagePullPolicy: Always
         name: jazz-standards
         envFrom:
@@ -189,7 +189,7 @@ spec:
                 - jazz-search
             topologyKey: topology.kubernetes.io/zone
       containers:
-      - image: localhost:30100/jazz-search:v1.1.0
+      - image: localhost:30100/jazz-search:v1.1.1
         imagePullPolicy: Always
         name: jazz-search
         envFrom:
