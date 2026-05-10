@@ -309,6 +309,17 @@ kubeStateMetrics:
   enabled: true
 
 grafana:
+  persistence:
+    enabled: true
+  smtp:
+    existingSecret: "smtp-credentials"
+    userKey: "username"
+    passwordKey: "password"
+  grafana.ini:
+    smtp:
+      enabled: true
+      host:  mail.gmx.net:587
+      from_address: "k3aix@gmx.de"
   serviceMonitor:
     enabled: true
     metricRelabelings:
